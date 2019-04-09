@@ -12,7 +12,7 @@ GO_TEST_DIRS := $(shell \
 all: install
 
 install:
-	go install -v
+	go install -v cmd/main.go
 
 test: $(GO_TEST_DIRS)
 	@for dir in $^; do \
