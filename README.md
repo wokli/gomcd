@@ -1,1 +1,3 @@
-golang memcache-like server
+
+# gomcd
+A toy memcached-like tcp server for educational purposes
