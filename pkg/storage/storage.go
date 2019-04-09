@@ -1,8 +1,14 @@
 package storage
 
 import (
+	"errors"
 	"log"
 	"strings"
+)
+
+const (
+	emptyStr = ""
+	okStr    = "OK"
 )
 
 var supportedCommands = map[string]bool{
@@ -23,40 +29,48 @@ func CreateStorage() (st *Storage) {
 }
 
 // Add adds
-func (st *Storage) Add(key string, value string) (err error) {
+func (st *Storage) Add(key string, value string) error {
 	st.data[key] = value
 	return nil
 }
 
 // Del deletes
-func (st *Storage) Del(key string) (err error) {
-	delete(st.data, key)
-	return nil
+func (st *Storage) Del(key string) error {
+	if _, ok := st.data[key]; ok {
+		delete(st.data, key)
+		return nil
+	}
+	return errors.New("not found")
 }
 
 // Get gets
-func (st *Storage) Get(key string) (res string, ok bool) {
-	log.Println(st.data)
-	res, ok = st.data[key]
-	log.Println(res, ok)
-	return
+func (st *Storage) Get(key string) (string, error) {
+	res, ok := st.data[key]
+	if ok {
+		return res, nil
+	}
+	return "", errors.New("not found")
 }
 
 // ProcessCommand processes command %)
-func ProcessCommand(st *Storage, cmd string) (*string, bool) {
+func ProcessCommand(st *Storage, cmd string) (string, error) {
 	var command, key, val string
 	var err error
 
 	words := strings.Fields(cmd)
-	log.Printf("words: %#+v\n", words)
+
+	if len(words) != 2 && len(words) != 3 {
+		return emptyStr, errors.New("Syntax err")
+	}
 
 	command = words[0]
 	if _, ok := supportedCommands[command]; !ok {
-		log.Fatal("command not supported:", command)
-		return nil, false
+		log.Println("command not supported:", command)
+		return emptyStr, errors.New("Not supported")
 	}
 
 	key = words[1]
+
 	if len(words) == 3 {
 		val = words[2]
 	}
@@ -65,24 +79,26 @@ func ProcessCommand(st *Storage, cmd string) (*string, bool) {
 	case "SET":
 		err = st.Add(key, val)
 		if err != nil {
-			log.Fatal(err)
-			return nil, false
+			// log.Println(err)
+			return emptyStr, err
 		}
-		return nil, true
+		return okStr, nil
 	case "DEL":
 		err = st.Del(key)
 		if err != nil {
-			log.Fatal(err)
-			return nil, false
+			// log.Println(err)
+			return emptyStr, err
 		}
-		return nil, true
+		return okStr, nil
 	case "GET":
-		res, ok := st.Get(key)
-		if !ok {
-			return nil, ok
+		res, err := st.Get(key)
+		if err != nil {
+			// log.Println(err)
+			return emptyStr, err
 		}
-		return &res, ok
+		return res, nil
 	}
-	log.Fatal("not implemented:", command)
-	return nil, false
+
+	log.Println("not implemented:", command)
+	return emptyStr, errors.New("Not implemented")
 }
